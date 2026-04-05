@@ -283,19 +283,16 @@ func NewCompositeReader(
 		}
 
 		path := paths[0]
-		resolvedPath, err := resolvePath(path)
+		// For stdin, the path is just a hint for the formatter, so we don't need to resolve symlinks
+		// or even check if the file exists on disk. We just normalize it to the tree root.
+		absPath, err := filepath.Abs(path)
 		if err != nil {
-			// If the path doesn't exist, we still want to make it relative to the root if possible.
-			// We use the absolute path without resolving symlinks.
-			resolvedPath, err = filepath.Abs(path)
-			if err != nil {
-				return nil, fmt.Errorf("error computing absolute path of %s: %w", path, err)
-			}
+			return nil, fmt.Errorf("error computing absolute path of %s: %w", path, err)
 		}
 
-		relativePath, err := filepath.Rel(root, resolvedPath)
+		relativePath, err := filepath.Rel(root, absPath)
 		if err != nil {
-			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
+			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, absPath, err)
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
